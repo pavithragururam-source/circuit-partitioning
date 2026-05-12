@@ -15,6 +15,22 @@ python main.py \\
     --seeds 0 1 2 \\
     --results-csv results/run.csv \\
     --figures-dir docs/figures
+
+Timing-aware example
+--------------------
+python main.py \\
+    --benchmark benchmarks/c880.bench \\
+    --timing-aware \\
+    --w-timing 1.0 \\
+    --algorithm HHO
+
+Multilevel example (for large circuits > 5k cells)
+---------------------------------------------------
+python main.py \\
+    --benchmark benchmarks/c7552.bench \\
+    --multilevel \\
+    --coarsen-to 200 \\
+    --algorithm HHO
 """
 
 from __future__ import annotations
@@ -25,7 +41,7 @@ import os
 import time
 import traceback
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -66,7 +82,11 @@ def build_parser() -> argparse.ArgumentParser:
                    metavar="B",
                    help="Allowed imbalance ratio (-balance_constraint).")
     p.add_argument("--timing-aware", action="store_true",
-                   help="Enable timing-aware mode (-timing_aware_flag).")
+                   help="Enable timing-aware mode: runs STA and annotates "
+                        "net criticality (-timing_aware_flag).")
+    p.add_argument("--clock-period", type=float, default=None, metavar="T",
+                   help="Clock period for STA in FO4 units. "
+                        "Defaults to auto-detect (critical-path length).")
     p.add_argument("--placement-file", metavar="FILE", default="",
                    help="Placement embedding file (-placement_file).")
     p.add_argument("--global-net-threshold", type=int, default=1000,
@@ -74,10 +94,27 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Skip hyperedges larger than this (-global_net_threshold).")
 
     # Objective weights
-    p.add_argument("--w-cut",      type=float, default=1.0)
-    p.add_argument("--w-balance",  type=float, default=10.0)
-    p.add_argument("--w-timing",   type=float, default=0.0)
-    p.add_argument("--w-placement",type=float, default=0.0)
+    p.add_argument("--w-cut",       type=float, default=1.0)
+    p.add_argument("--w-balance",   type=float, default=10.0)
+    p.add_argument("--w-timing",    type=float, default=1.0,
+                   help="Timing penalty weight (used only when --timing-aware).")
+    p.add_argument("--w-placement", type=float, default=0.0)
+
+    # FM refinement
+    p.add_argument("--fm-refinement", action=argparse.BooleanOptionalAction,
+                   default=True,
+                   help="Apply FM post-refinement after metaheuristic "
+                        "(--no-fm-refinement to disable).")
+    p.add_argument("--fm-max-passes", type=int, default=10, metavar="P",
+                   help="Maximum FM passes per level.")
+
+    # Multilevel coarsening
+    p.add_argument("--multilevel", action=argparse.BooleanOptionalAction,
+                   default=False,
+                   help="Enable HEM multilevel coarsening "
+                        "(recommended for circuits > 5k cells).")
+    p.add_argument("--coarsen-to", type=int, default=200, metavar="N",
+                   help="Stop coarsening when |V| ≤ this value.")
 
     # Optimiser selection
     p.add_argument("--algorithm", "-a", nargs="+",
@@ -127,6 +164,7 @@ def run_single(
     seed: int,
     results_csv: str,
     solution_dir: str,
+    clock_period: Optional[float] = None,
     verbose: bool = False,
 ) -> dict:
     """Run one (benchmark, algorithm, seed) experiment and return the result dict."""
@@ -136,10 +174,23 @@ def run_single(
     hg = apply_global_net_threshold(hg, cfg.global_net_threshold)
     circuit_name = Path(benchmark_path).stem
 
+    # Timing annotation — must happen before optimization so net_criticality
+    # is available to the objective function.
+    if cfg.timing_aware and benchmark_path.endswith(".bench"):
+        try:
+            from timing import run_sta_from_bench
+            hg = run_sta_from_bench(benchmark_path, hg, clock_period=clock_period)
+        except Exception as exc:
+            if verbose:
+                print(f"  [STA] failed for {circuit_name}: {exc}; using heuristic criticality")
+            from timing import annotate_timing
+            hg = annotate_timing(hg)
+
     opt = get_optimizer(algorithm, pop_size=pop_size, max_iter=max_iter)
 
     t0 = time.perf_counter()
-    partition, history = opt.optimize(hg, cfg, seed=seed)
+    # run() applies multilevel + FM wrapping controlled by cfg flags
+    partition, history = opt.run(hg, cfg, seed=seed)
     runtime = time.perf_counter() - t0
 
     from objective import evaluate as obj_eval
@@ -153,8 +204,13 @@ def run_single(
         "balance_constraint": cfg.balance_constraint,
         "seed":               seed,
         "cutsize":            metrics["cutsize"],
+        "soed":               metrics["soed"],
+        "imbalance":          round(metrics["imbalance"], 5),
+        "timing_penalty":     round(metrics["timing_penalty"], 4),
         "runtime_sec":        round(runtime, 4),
         "feasible":           metrics["feasible"],
+        "multilevel":         cfg.multilevel,
+        "fm_refinement":      cfg.fm_refinement,
         "notes":              "",
     }
     append_result(row, results_csv)
@@ -169,7 +225,8 @@ def run_single(
     if verbose:
         print(
             f"  [{algorithm}] {circuit_name} seed={seed} "
-            f"cut={metrics['cutsize']:.0f} imbalance={metrics['imbalance']:.3f} "
+            f"cut={metrics['cutsize']:.0f} soed={metrics['soed']:.0f} "
+            f"imbalance={metrics['imbalance']:.3f} "
             f"feasible={metrics['feasible']} t={runtime:.2f}s"
         )
 
@@ -187,7 +244,7 @@ def main(argv: List[str] = None) -> int:
     # Resolve algorithm list
     algorithms = list(REGISTRY.keys()) if "ALL" in args.algorithm else args.algorithm
 
-    # Build PartitionConfig
+    # Build PartitionConfig — wire all expert flags
     cfg = PartitionConfig(
         num_parts=args.num_parts,
         balance_constraint=args.balance_constraint,
@@ -196,26 +253,30 @@ def main(argv: List[str] = None) -> int:
         global_net_threshold=args.global_net_threshold,
         w_cut=args.w_cut,
         w_balance=args.w_balance,
-        w_timing=args.w_timing,
+        w_timing=args.w_timing if args.timing_aware else 0.0,
         w_placement=args.w_placement,
+        fm_refinement=args.fm_refinement,
+        fm_max_passes=args.fm_max_passes,
+        multilevel=args.multilevel,
+        coarsen_to=args.coarsen_to,
     )
 
     # Collect benchmark paths
     if args.manifest:
         manifest = load_manifest(args.manifest)
         bench_list = [
-            (row["source_url"] if row.get("status") == "available" else None,
-             row.get("family", ""),
-             row["circuit"])
+            (row.get("source_url"), row.get("family", ""), row["circuit"])
             for row in manifest
         ]
-        # Filter to locally available files only
         bench_entries = []
-        for url, family, circuit in bench_list:
-            ext = ".bench"
-            local_path = os.path.join("benchmarks", circuit + ext)
-            if os.path.exists(local_path):
-                bench_entries.append((local_path, family or args.family or "UNKNOWN"))
+        for _url, family, circuit in bench_list:
+            for ext in (".bench", ".hgr", ".v"):
+                local_path = os.path.join("benchmarks", circuit + ext)
+                if os.path.exists(local_path):
+                    bench_entries.append(
+                        (local_path, family or args.family or "UNKNOWN")
+                    )
+                    break
             else:
                 if args.verbose:
                     print(f"  [skip] {circuit} — not downloaded yet")
@@ -224,7 +285,7 @@ def main(argv: List[str] = None) -> int:
     else:
         parser.error("Provide --benchmark FILE or --manifest CSV")
 
-    # OpenROAD baseline
+    # OpenROAD baseline adapter
     or_adapter = OpenROADAdapter(openroad_bin=args.openroad_bin)
 
     all_histories = {}   # {(bench, algo): history}
@@ -233,6 +294,12 @@ def main(argv: List[str] = None) -> int:
     for bench_path, family in bench_entries:
         circuit = Path(bench_path).stem
         print(f"\n=== {circuit} ({family}) ===")
+        if cfg.multilevel:
+            print(f"    multilevel=ON  coarsen_to={cfg.coarsen_to}")
+        if cfg.fm_refinement:
+            print(f"    FM refinement=ON  max_passes={cfg.fm_max_passes}")
+        if cfg.timing_aware:
+            print(f"    timing-aware=ON  clock_period={args.clock_period}")
 
         for algo in algorithms:
             for seed in args.seeds:
@@ -247,6 +314,7 @@ def main(argv: List[str] = None) -> int:
                         seed=seed,
                         results_csv=args.results_csv,
                         solution_dir=args.solution_dir,
+                        clock_period=args.clock_period,
                         verbose=args.verbose,
                     )
                     key = (circuit, algo)
@@ -262,15 +330,21 @@ def main(argv: List[str] = None) -> int:
             try:
                 result = or_adapter.triton_part_hypergraph(bench_path, cfg)
                 row = {
-                    "benchmark": circuit, "family": family,
-                    "algorithm": "TritonPart",
-                    "num_parts": cfg.num_parts,
+                    "benchmark":          circuit,
+                    "family":             family,
+                    "algorithm":          "TritonPart",
+                    "num_parts":          cfg.num_parts,
                     "balance_constraint": cfg.balance_constraint,
-                    "seed": 0,
-                    "cutsize": result.get("cutsize", ""),
-                    "runtime_sec": "",
-                    "feasible": result.get("feasible", ""),
-                    "notes": "OpenROAD baseline",
+                    "seed":               0,
+                    "cutsize":            result.get("cutsize", ""),
+                    "soed":               "",
+                    "imbalance":          "",
+                    "timing_penalty":     "",
+                    "runtime_sec":        "",
+                    "feasible":           result.get("feasible", ""),
+                    "multilevel":         "",
+                    "fm_refinement":      "",
+                    "notes":              "OpenROAD baseline",
                 }
                 append_result(row, args.results_csv)
                 if args.verbose:

@@ -16,10 +16,31 @@ partitioning:
 # Objective function weights
 # ---------------------------------------------------------------------------
 objective:
-  w_cut: 1.0          # hyperedge cut weight
+  w_cut: 1.0          # hyperedge cut weight  (applied to SOED when use_soed=true)
   w_balance: 10.0     # imbalance penalty weight
-  w_timing: 0.0       # timing penalty weight  (non-zero only when timing_aware)
-  w_placement: 0.0    # placement penalty weight  (non-zero only when placement_aware)
+  w_timing: 1.0       # timing penalty weight  (active only when timing_aware=true)
+  w_placement: 0.0    # HPWL placement penalty (active only when placement_aware=true)
+  use_soed: true      # use SOED metric (preferred over binary cut for k > 2)
+
+# ---------------------------------------------------------------------------
+# FM local refinement  (Fiduccia-Mattheyses k-way)
+# ---------------------------------------------------------------------------
+refinement:
+  fm_refinement: true     # apply FM post-refinement after every metaheuristic run
+  fm_max_passes: 10       # maximum FM passes per level (set lower for faster runs)
+
+# ---------------------------------------------------------------------------
+# Multilevel coarsening  (Heavy Edge Matching)
+# ---------------------------------------------------------------------------
+coarsening:
+  multilevel: false     # set true for circuits > 5k cells
+  coarsen_to: 200       # stop coarsening when |V_coarse| ≤ this value
+
+# ---------------------------------------------------------------------------
+# Timing analysis  (Static Timing Analysis — ISCAS'85/'89)
+# ---------------------------------------------------------------------------
+timing:
+  clock_period: null    # FO4 units; null = auto-detect from critical-path length
 
 # ---------------------------------------------------------------------------
 # Optimiser hyperparameters
