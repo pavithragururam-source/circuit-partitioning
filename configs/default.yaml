@@ -1,0 +1,86 @@
+# VLSI Circuit Partitioning Framework — default configuration
+# All values here can be overridden by CLI flags.
+
+# ---------------------------------------------------------------------------
+# Partitioning parameters  (aligned to OpenROAD/TritonPart)
+# ---------------------------------------------------------------------------
+partitioning:
+  num_parts: 2                   # -num_parts
+  balance_constraint: 0.10       # -balance_constraint  (10 % imbalance allowed)
+  timing_aware: false            # -timing_aware_flag
+  placement_aware: false
+  global_net_threshold: 1000     # -global_net_threshold  (skip nets > N pins)
+  solution_dir: results/solutions
+
+# ---------------------------------------------------------------------------
+# Objective function weights
+# ---------------------------------------------------------------------------
+objective:
+  w_cut: 1.0          # hyperedge cut weight
+  w_balance: 10.0     # imbalance penalty weight
+  w_timing: 0.0       # timing penalty weight  (non-zero only when timing_aware)
+  w_placement: 0.0    # placement penalty weight  (non-zero only when placement_aware)
+
+# ---------------------------------------------------------------------------
+# Optimiser hyperparameters
+# ---------------------------------------------------------------------------
+optimizer:
+  pop_size: 30
+  max_iter: 200
+  seeds: [0, 1, 2]   # list of random seeds for repeated runs
+
+  # Per-algorithm overrides (merged with common parameters above)
+  ABC:
+    limit: 50          # scout abandonment threshold
+    perturb_rate: 0.15
+
+  KH:
+    n_max: 0.01
+    v_f: 0.02
+    d_max: 0.005
+
+  MBO:
+    p: 0.4167          # migration ratio  (5/12)
+    period: 1.2
+    smax: 1
+
+  EWA:
+    beta: 0.98
+    gamma: 0.9
+    alpha: 0.99
+
+  EHO:
+    n_clans: 5
+    alpha: 0.5
+    beta: 0.1
+
+  MS:
+    levy_beta: 1.5
+    p_levy: 0.3
+
+  SMA:
+    z: 0.03
+
+  HHO: {}            # uses base pop_size / max_iter only
+
+# ---------------------------------------------------------------------------
+# Benchmark paths
+# ---------------------------------------------------------------------------
+benchmarks:
+  manifest: benchmarks/benchmark_manifest.csv
+  local_dir: benchmarks/circuits
+
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+output:
+  results_csv: results/run.csv
+  figures_dir: docs/figures
+  log_level: INFO      # DEBUG | INFO | WARNING | ERROR
+
+# ---------------------------------------------------------------------------
+# OpenROAD baseline  (optional — requires OpenROAD in PATH)
+# ---------------------------------------------------------------------------
+openroad:
+  enabled: false
+  binary: openroad

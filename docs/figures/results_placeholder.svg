@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="440"
+     viewBox="0 0 800 440" font-family="Arial,sans-serif">
+  <rect width="800" height="440" fill="white"/>
+
+  <!-- Title -->
+  <text x="400" y="28" text-anchor="middle"
+        font-size="15" font-weight="bold" fill="#1a1a2e">
+    Cut Size Comparison — ISCAS85 (k=2, balance=0.10)  [Placeholder]
+  </text>
+
+  <!-- Axes -->
+  <line x1="70"  y1="380" x2="770" y2="380" stroke="#334155" stroke-width="1.5"/>
+  <line x1="70"  y1="60"  x2="70"  y2="380" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Y-axis label -->
+  <text x="20" y="225" text-anchor="middle" font-size="12" fill="#334155"
+        transform="rotate(-90, 20, 225)">Cut Size</text>
+
+  <!-- Y-axis ticks -->
+  <line x1="65" y1="380" x2="70" y2="380" stroke="#334155" stroke-width="1"/>
+  <text x="60" y="384" text-anchor="end" font-size="10" fill="#334155">0</text>
+  <line x1="65" y1="300" x2="70" y2="300" stroke="#334155" stroke-width="1"/>
+  <text x="60" y="304" text-anchor="end" font-size="10" fill="#334155">50</text>
+  <line x1="65" y1="220" x2="70" y2="220" stroke="#334155" stroke-width="1"/>
+  <text x="60" y="224" text-anchor="end" font-size="10" fill="#334155">100</text>
+  <line x1="65" y1="140" x2="70" y2="140" stroke="#334155" stroke-width="1"/>
+  <text x="60" y="144" text-anchor="end" font-size="10" fill="#334155">150</text>
+
+  <!-- Gridlines -->
+  <line x1="70" y1="300" x2="770" y2="300" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="70" y1="220" x2="770" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="70" y1="140" x2="770" y2="140" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Bar groups for 4 benchmark circuits: c17, c432, c880, c1908 -->
+  <!-- Each group: 8 algorithms, bar width=9, group spacing=60 -->
+  <!-- Group x centres: 120, 240, 360, 480, 600, 720 -->
+
+  <!-- Algorithm colours -->
+  <!-- ABC=#1f77b4  KH=#ff7f0e  MBO=#2ca02c  EWA=#d62728  EHO=#9467bd  MS=#8c564b  SMA=#e377c2  HHO=#7f7f7f -->
+
+  <!-- c17 group (small circuit, low cuts) -->
+  <text x="120" y="398" text-anchor="middle" font-size="11" fill="#334155">c17</text>
+  <rect x="82"  y="358" width="9" height="22" fill="#1f77b4"/>
+  <rect x="93"  y="361" width="9" height="19" fill="#ff7f0e"/>
+  <rect x="104" y="360" width="9" height="20" fill="#2ca02c"/>
+  <rect x="115" y="362" width="9" height="18" fill="#d62728"/>
+  <rect x="126" y="359" width="9" height="21" fill="#9467bd"/>
+  <rect x="137" y="360" width="9" height="20" fill="#8c564b"/>
+  <rect x="148" y="361" width="9" height="19" fill="#e377c2"/>
+  <rect x="159" y="358" width="9" height="22" fill="#7f7f7f"/>
+
+  <!-- c432 group (medium) -->
+  <text x="240" y="398" text-anchor="middle" font-size="11" fill="#334155">c432</text>
+  <rect x="202" y="268" width="9" height="112" fill="#1f77b4"/>
+  <rect x="213" y="276" width="9" height="104" fill="#ff7f0e"/>
+  <rect x="224" y="280" width="9" height="100" fill="#2ca02c"/>
+  <rect x="235" y="272" width="9" height="108" fill="#d62728"/>
+  <rect x="246" y="264" width="9" height="116" fill="#9467bd"/>
+  <rect x="257" y="276" width="9" height="104" fill="#8c564b"/>
+  <rect x="268" y="270" width="9" height="110" fill="#e377c2"/>
+  <rect x="279" y="260" width="9" height="120" fill="#7f7f7f"/>
+
+  <!-- c880 group (larger) -->
+  <text x="360" y="398" text-anchor="middle" font-size="11" fill="#334155">c880</text>
+  <rect x="322" y="220" width="9" height="160" fill="#1f77b4"/>
+  <rect x="333" y="230" width="9" height="150" fill="#ff7f0e"/>
+  <rect x="344" y="235" width="9" height="145" fill="#2ca02c"/>
+  <rect x="355" y="222" width="9" height="158" fill="#d62728"/>
+  <rect x="366" y="215" width="9" height="165" fill="#9467bd"/>
+  <rect x="377" y="225" width="9" height="155" fill="#8c564b"/>
+  <rect x="388" y="220" width="9" height="160" fill="#e377c2"/>
+  <rect x="399" y="210" width="9" height="170" fill="#7f7f7f"/>
+
+  <!-- c1908 group -->
+  <text x="480" y="398" text-anchor="middle" font-size="11" fill="#334155">c1908</text>
+  <rect x="442" y="180" width="9" height="200" fill="#1f77b4"/>
+  <rect x="453" y="190" width="9" height="190" fill="#ff7f0e"/>
+  <rect x="464" y="185" width="9" height="195" fill="#2ca02c"/>
+  <rect x="475" y="175" width="9" height="205" fill="#d62728"/>
+  <rect x="486" y="170" width="9" height="210" fill="#9467bd"/>
+  <rect x="497" y="182" width="9" height="198" fill="#8c564b"/>
+  <rect x="508" y="178" width="9" height="202" fill="#e377c2"/>
+  <rect x="519" y="165" width="9" height="215" fill="#7f7f7f"/>
+
+  <!-- c3540 group -->
+  <text x="600" y="398" text-anchor="middle" font-size="11" fill="#334155">c3540</text>
+  <rect x="562" y="140" width="9" height="240" fill="#1f77b4"/>
+  <rect x="573" y="150" width="9" height="230" fill="#ff7f0e"/>
+  <rect x="584" y="145" width="9" height="235" fill="#2ca02c"/>
+  <rect x="595" y="138" width="9" height="242" fill="#d62728"/>
+  <rect x="606" y="132" width="9" height="248" fill="#9467bd"/>
+  <rect x="617" y="142" width="9" height="238" fill="#8c564b"/>
+  <rect x="628" y="137" width="9" height="243" fill="#e377c2"/>
+  <rect x="639" y="128" width="9" height="252" fill="#7f7f7f"/>
+
+  <!-- Legend -->
+  <rect x="672" y="80"  width="12" height="12" fill="#1f77b4"/>
+  <text x="688" y="91"  font-size="11" fill="#334155">ABC</text>
+  <rect x="672" y="98"  width="12" height="12" fill="#ff7f0e"/>
+  <text x="688" y="109" font-size="11" fill="#334155">KH</text>
+  <rect x="672" y="116" width="12" height="12" fill="#2ca02c"/>
+  <text x="688" y="127" font-size="11" fill="#334155">MBO</text>
+  <rect x="672" y="134" width="12" height="12" fill="#d62728"/>
+  <text x="688" y="145" font-size="11" fill="#334155">EWA</text>
+  <rect x="672" y="152" width="12" height="12" fill="#9467bd"/>
+  <text x="688" y="163" font-size="11" fill="#334155">EHO</text>
+  <rect x="672" y="170" width="12" height="12" fill="#8c564b"/>
+  <text x="688" y="181" font-size="11" fill="#334155">MS</text>
+  <rect x="672" y="188" width="12" height="12" fill="#e377c2"/>
+  <text x="688" y="199" font-size="11" fill="#334155">SMA</text>
+  <rect x="672" y="206" width="12" height="12" fill="#7f7f7f"/>
+  <text x="688" y="217" font-size="11" fill="#334155">HHO</text>
+
+  <!-- Placeholder label -->
+  <text x="400" y="425" text-anchor="middle" font-size="10" fill="#94a3b8"
+        font-style="italic">
+    [Generated by reporting.generate_all_figures() after benchmark runs]
+  </text>
+</svg>
